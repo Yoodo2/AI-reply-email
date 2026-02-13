@@ -96,6 +96,14 @@ export default function App() {
   const [emailTotalCount, setEmailTotalCount] = useState(0);  // 总邮件数
   const [emailPendingCount, setEmailPendingCount] = useState(0);  // 待处理数
 
+  // 已处理邮件分页状态
+  const [processedPage, setProcessedPage] = useState(1);
+  const [processedPageSize, setProcessedPageSize] = useState(10);
+  const [processedTotal, setProcessedTotal] = useState(0);
+  const [processedTotalPages, setProcessedTotalPages] = useState(0);
+  const [processedEmails, setProcessedEmails] = useState([]);
+  const [selectedProcessedEmail, setSelectedProcessedEmail] = useState(null);
+
   // Loading states for async actions
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -149,6 +157,15 @@ export default function App() {
     if ((data.data || []).length && !selectedEmail) {
       setSelectedEmail(data.data[0]);
     }
+  };
+
+  const loadProcessedEmails = async (page = 1) => {
+    const response = await fetch(`${apiBase}/emails?status=sent&page=${page}&page_size=${processedPageSize}`);
+    const data = await response.json();
+    setProcessedEmails(data.data || []);
+    setProcessedTotal(data.total || 0);
+    setProcessedTotalPages(data.total_pages || 0);
+    setProcessedPage(data.page || 1);
   };
 
   const loadCategories = async () => {
@@ -551,6 +568,12 @@ export default function App() {
       <nav className="nav">
         <Button className={view === "inbox" ? "active" : ""} onClick={() => setView("inbox")}>待处理</Button>
         <Button className={view === "workspace" ? "active" : ""} onClick={() => setView("workspace")}>处理台</Button>
+        <Button
+          className={view === "processed" ? "active" : ""}
+          onClick={() => { setView("processed"); loadProcessedEmails(1); }}
+        >
+          已处理
+        </Button>
         <Button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}>配置中心</Button>
         <Button className={view === "templates" ? "active" : ""} onClick={() => setView("templates")}>模板库</Button>
       </nav>
@@ -956,6 +979,121 @@ export default function App() {
               })}
               {!templates.length && <div className="empty">暂无模板，点击「新建模板」按钮添加</div>}
             </div>
+          </section>
+        )}
+
+        {view === "processed" && (
+          <section className="panel processed-archive">
+            <div className="panel-head">
+              <h2>已处理邮件</h2>
+              <span>{processedTotal} 封已归档</span>
+            </div>
+
+            {/* 统计卡片 */}
+            <div className="archive-stats">
+              <div className="stat-card">
+                <span className="stat-number">{processedTotal}</span>
+                <span className="stat-label">已处理</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-number">{emailTotalCount > 0 ? Math.round((processedTotal / emailTotalCount) * 100) : 0}%</span>
+                <span className="stat-label">完成率</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-number">{emailPendingCount}</span>
+                <span className="stat-label">待处理</span>
+              </div>
+            </div>
+
+            <div className="mail-list archive-list">
+              {processedEmails.map((email, index) => {
+                const cat = categories.find((c) => c.id === email.category_id);
+                return (
+                  <div
+                    key={email.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`mail-card archive-card ${selectedProcessedEmail?.id === email.id ? "selected" : ""}`}
+                    onClick={() => setSelectedProcessedEmail(selectedProcessedEmail?.id === email.id ? null : email)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setSelectedProcessedEmail(selectedProcessedEmail?.id === email.id ? null : email); }}
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    <div className="archive-timeline">
+                      <div className="timeline-dot"></div>
+                      <div className="timeline-line"></div>
+                    </div>
+                    <div className="mail-info archive-info">
+                      <div className="mail-header-row">
+                        <h3>{email.subject || "(无主题)"}</h3>
+                        <span className="archive-badge">已发送</span>
+                      </div>
+                      <p>{email.sender}</p>
+                      <div className="mail-time">
+                        <span className="time-relative">{formatRelativeTime(email.received_at)}</span>
+                        <span className="time-full">{formatFullTime(email.received_at)}</span>
+                      </div>
+                      {selectedProcessedEmail?.id === email.id && (
+                        <div className="archive-details">
+                          <div className="detail-section">
+                            <h4>原文内容</h4>
+                            <p>{email.body_text || "(空)"}</p>
+                          </div>
+                          <div className="detail-section">
+                            <h4>译文</h4>
+                            <p>{email.translation || "未翻译"}</p>
+                          </div>
+                          <div className="detail-section">
+                            <h4>回复内容</h4>
+                            <p className="reply-content">{email.final_reply || email.ai_reply || "(无)"}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mail-meta">
+                      <span className="tag archive-tag">{cat?.name || "未分类"}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {!processedEmails.length && <div className="empty archive-empty">暂无已处理邮件</div>}
+            </div>
+
+            {/* 分页控件 */}
+            {processedTotalPages > 1 && (
+              <div className="pagination archive-pagination">
+                <Button
+                  className="ghost small"
+                  onClick={() => loadProcessedEmails(1)}
+                  disabled={processedPage === 1}
+                >
+                  首页
+                </Button>
+                <Button
+                  className="ghost small"
+                  onClick={() => loadProcessedEmails(processedPage - 1)}
+                  disabled={processedPage === 1}
+                >
+                  上一页
+                </Button>
+                <span className="page-info">
+                  第 {processedPage} / {processedTotalPages} 页 ({processedTotal} 封)
+                </span>
+                <Button
+                  className="ghost small"
+                  onClick={() => loadProcessedEmails(processedPage + 1)}
+                  disabled={processedPage >= processedTotalPages}
+                >
+                  下一页
+                </Button>
+                <Button
+                  className="ghost small"
+                  onClick={() => loadProcessedEmails(processedTotalPages)}
+                  disabled={processedPage >= processedTotalPages}
+                >
+                  末页
+                </Button>
+              </div>
+            )}
           </section>
         )}
 

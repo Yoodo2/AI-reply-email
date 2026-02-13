@@ -4,11 +4,22 @@
 """
 import random
 import uuid
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
-from ..db import db
-from ..services.email_client import send_reply
+# 添加项目根目录到路径（支持直接运行此文件）
+backend_path = Path(__file__).resolve().parents[2]
+if str(backend_path) not in sys.path:
+    sys.path.insert(0, str(backend_path))
+
+try:
+    from app.db import db
+    from app.services.email_client import send_reply
+except ImportError:
+    # 如果添加路径后仍然导入失败，使用相对导入
+    pass
 
 # 随机姓名库
 FIRST_NAMES = [
@@ -331,18 +342,11 @@ def generateTestEmails(
 
 # 可独立运行的测试
 if __name__ == "__main__":
-    # 初始化数据库连接
-    import sys
-    from pathlib import Path
-
-    # 添加项目根目录到路径
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
     # 测试发送邮件
     print("Sending test emails to yo17765767816@163.com...")
 
     # 确保先初始化数据库
-    from ..db.db import init_db
+    from app.db.db import init_db
     init_db()
 
     result = generateTestEmails(

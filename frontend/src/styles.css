@@ -1596,3 +1596,269 @@ button.loading > *:not(.spinner-wrapper) {
   border-top: 1px solid var(--border);
   margin-top: auto;
 }
+
+/* ===== PROCESSED ARCHIVE STYLES ===== */
+/* 档案室风格 - 暖琥珀色调 */
+
+.processed-archive {
+  background: linear-gradient(135deg, var(--panel) 0%, #faf8f5 100%);
+  border: 1px solid rgba(180, 140, 100, 0.2);
+}
+
+.processed-archive .panel-head h2 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #5c4a3a;
+}
+
+:root[data-theme="dark"] .processed-archive .panel-head h2 {
+  color: #d4c4b0;
+}
+
+/* 统计卡片 */
+.archive-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: linear-gradient(145deg, #f5f0e8 0%, #ebe4d8 100%);
+  border: 1px solid rgba(180, 140, 100, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #c9a86c, #b8956a, #c9a86c);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(180, 140, 100, 0.15);
+}
+
+.stat-number {
+  display: block;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #8b6914;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #8a7a6a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .stat-card {
+  background: linear-gradient(145deg, #2a2520 0%, #1f1b17 100%);
+  border-color: rgba(180, 140, 100, 0.2);
+}
+
+:root[data-theme="dark"] .stat-number {
+  color: #d4b896;
+}
+
+:root[data-theme="dark"] .stat-label {
+  color: #a09080;
+}
+
+/* 档案列表 */
+.archive-list {
+  position: relative;
+}
+
+.archive-card {
+  background: linear-gradient(145deg, #fdfcfa 0%, #f8f5f0 100%);
+  border: 1px solid rgba(180, 140, 100, 0.2);
+  border-radius: 14px;
+  padding: 20px 24px 20px 56px;
+  position: relative;
+  animation: archiveFadeIn 0.5s ease forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes archiveFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.archive-card:hover {
+  background: linear-gradient(145deg, #ffffff 0%, #faf8f5 100%);
+  border-color: rgba(180, 140, 100, 0.35);
+  box-shadow: 0 4px 16px rgba(180, 140, 100, 0.1);
+}
+
+.archive-card.selected {
+  background: linear-gradient(145deg, #fff9f0 0%, #fdf5e8 100%);
+  border-color: #c9a86c;
+  box-shadow: 0 4px 20px rgba(201, 168, 108, 0.15);
+}
+
+/* 时间线 */
+.archive-timeline {
+  position: absolute;
+  left: 20px;
+  top: 24px;
+  bottom: 24px;
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #c9a86c, #b8956a);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(180, 140, 100, 0.3);
+  flex-shrink: 0;
+}
+
+.timeline-line {
+  flex: 1;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(201, 168, 108, 0.4), rgba(201, 168, 108, 0.1));
+  margin-top: 8px;
+}
+
+.archive-card:last-child .timeline-line {
+  display: none;
+}
+
+/* 档案标签 */
+.archive-badge {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #4a7c59, #3d6b4a);
+  color: white;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.archive-tag {
+  background: rgba(201, 168, 108, 0.15);
+  color: #8b6914;
+}
+
+/* 档案详情展开 */
+.archive-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(180, 140, 100, 0.3);
+  animation: expandDetails 0.3s ease;
+}
+
+@keyframes expandDetails {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h4 {
+  font-size: 12px;
+  color: #8a7a6a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.detail-section p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detail-section .reply-content {
+  background: linear-gradient(145deg, #f0f7f2 0%, #e8f0ea 100%);
+  padding: 14px 16px;
+  border-radius: 10px;
+  border-left: 3px solid #4a7c59;
+  color: #2d5016;
+}
+
+:root[data-theme="dark"] .archive-card {
+  background: linear-gradient(145deg, #252220 0%, #1f1c19 100%);
+  border-color: rgba(180, 140, 100, 0.15);
+}
+
+:root[data-theme="dark"] .archive-card:hover {
+  background: linear-gradient(145deg, #2a2623 0%, #24201d 100%);
+}
+
+:root[data-theme="dark"] .archive-card.selected {
+  background: linear-gradient(145deg, #2d2824 0%, #26221e 100%);
+  border-color: #c9a86c;
+}
+
+:root[data-theme="dark"] .detail-section .reply-content {
+  background: linear-gradient(145deg, #1f2d22 0%, #1a261c 100%);
+  color: #a8d5a2;
+  border-left-color: #5a9a6a;
+}
+
+/* 档案分页 */
+.archive-pagination {
+  border-top-color: rgba(180, 140, 100, 0.2);
+}
+
+.archive-empty {
+  color: #9a8a7a;
+  font-style: italic;
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+  .archive-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-card {
+    padding-left: 48px;
+  }
+
+  .archive-timeline {
+    left: 16px;
+  }
+}
