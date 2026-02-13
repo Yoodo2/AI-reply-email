@@ -574,7 +574,7 @@ export default function App() {
         >
           已处理
         </Button>
-        <Button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}>配置中心</Button>
+        <Button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}>分类管理</Button>
         <Button className={view === "templates" ? "active" : ""} onClick={() => setView("templates")}>模板库</Button>
       </nav>
 
@@ -847,39 +847,9 @@ export default function App() {
         {view === "settings" && (
           <section className="panel settings">
             <div className="panel-head">
-              <h2>配置中心</h2>
-              <span>管理邮箱、AI和系统配置</span>
+              <h2>分类管理</h2>
+              <span>配置邮件分类及关键词，用于AI分类识别</span>
             </div>
-            <form className="settings-form settings-wide" onSubmit={saveSettings}>
-              <div className="form-section">
-                <h3>邮箱配置</h3>
-                <div className="form-grid form-grid-wide">
-                  <input placeholder="邮箱账号" value={mailAccount?.email || ""} onChange={(e) => setMailAccount({ ...mailAccount, email: e.target.value })} />
-                  <input placeholder="IMAP Host" value={mailAccount?.imap_host || ""} onChange={(e) => setMailAccount({ ...mailAccount, imap_host: e.target.value })} />
-                  <input placeholder="IMAP Port" value={mailAccount?.imap_port || ""} onChange={(e) => setMailAccount({ ...mailAccount, imap_port: Number(e.target.value) })} />
-                  <input placeholder="SMTP Host" value={mailAccount?.smtp_host || ""} onChange={(e) => setMailAccount({ ...mailAccount, smtp_host: e.target.value })} />
-                  <input placeholder="SMTP Port" value={mailAccount?.smtp_port || ""} onChange={(e) => setMailAccount({ ...mailAccount, smtp_port: Number(e.target.value) })} />
-                  <input placeholder="登录用户名" value={mailAccount?.username || ""} onChange={(e) => setMailAccount({ ...mailAccount, username: e.target.value })} />
-                  <input placeholder="登录密码" type="password" value={mailAccount?.password || ""} onChange={(e) => setMailAccount({ ...mailAccount, password: e.target.value })} />
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h3>AI / 翻译配置</h3>
-                <div className="form-grid form-grid-wide">
-                  <input placeholder="百度翻译 AppID" value={settings.baidu_appid || ""} onChange={(e) => setSettings({ ...settings, baidu_appid: e.target.value })} />
-                  <input placeholder="百度翻译 Secret" value={settings.baidu_secret || ""} onChange={(e) => setSettings({ ...settings, baidu_secret: e.target.value })} />
-                  <input placeholder="DeepSeek API Key" value={settings.deepseek_api_key || ""} onChange={(e) => setSettings({ ...settings, deepseek_api_key: e.target.value })} />
-                  <input placeholder="DeepSeek Base URL" value={settings.deepseek_base_url || ""} onChange={(e) => setSettings({ ...settings, deepseek_base_url: e.target.value })} />
-                  <input placeholder="DeepSeek Model" value={settings.deepseek_model || ""} onChange={(e) => setSettings({ ...settings, deepseek_model: e.target.value })} />
-                  <input placeholder="拉取间隔(秒)" value={settings.fetch_interval || ""} onChange={(e) => setSettings({ ...settings, fetch_interval: Number(e.target.value) })} />
-                </div>
-              </div>
-
-              <Button className="primary" type="submit" loading={isSavingSettings}>保存配置</Button>
-            </form>
-
-            {/* 分类管理 - 保留在设置中 */}
             <div className="form-section categories-section">
               <h3>邮件分类管理</h3>
               <p className="section-desc">配置邮件分类及关键词，用于AI分类识别。</p>
