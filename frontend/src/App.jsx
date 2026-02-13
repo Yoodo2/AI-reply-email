@@ -3,6 +3,50 @@ import Button from "./components/Button";
 
 const apiBase = "/api";
 
+// 时间格式化工具函数
+const formatRelativeTime = (dateString) => {
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+
+  // 超过7天显示具体日期
+  if (diffDays > 7) {
+    return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+  }
+
+  // 1周内显示相对时间
+  if (diffDays > 0) {
+    return `${diffDays}天前`;
+  }
+  if (diffHours > 0) {
+    return `${diffHours}小时前`;
+  }
+  if (diffMinutes > 0) {
+    return `${diffMinutes}分钟前`;
+  }
+  return "刚刚";
+};
+
+const formatFullTime = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+};
+
 const emptySettings = {
   fetch_interval: 300,
   target_lang: "zh",
@@ -31,6 +75,25 @@ export default function App() {
   const [processingStatus, setProcessingStatus] = useState({}); // { id: 'analyzing' | 'sending' | 'sent' | 'deleting' }
   const [processingSuccess, setProcessingSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 当前时间，用于动态更新相对时间显示
+  const [now, setNow] = useState(new Date());
+
+  // 每分钟更新一次当前时间
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60000); // 60秒更新一次
+    return () => clearInterval(timer);
+  }, []);
+
+  // 分页状态
+  const [emailPage, setEmailPage] = useState(1);
+  const [emailPageSize, setEmailPageSize] = useState(10);
+  const [emailTotal, setEmailTotal] = useState(0);
+  const [emailTotalPages, setEmailTotalPages] = useState(0);
+  const [emailTotalCount, setEmailTotalCount] = useState(0);  // 总邮件数
+  const [emailPendingCount, setEmailPendingCount] = useState(0);  // 待处理数
 
   // Loading states for async actions
   const [isSyncing, setIsSyncing] = useState(false);
@@ -73,12 +136,17 @@ export default function App() {
     }
   };
 
-  const loadEmails = async () => {
-    const response = await fetch(`${apiBase}/emails?status=pending`);
+  const loadEmails = async (page = 1) => {
+    const response = await fetch(`${apiBase}/emails?status=pending&page=${page}&page_size=${emailPageSize}`);
     const data = await response.json();
-    setEmails(data);
-    if (data.length && !selectedEmail) {
-      setSelectedEmail(data[0]);
+    setEmails(data.data || []);
+    setEmailTotal(data.total || 0);
+    setEmailTotalPages(data.total_pages || 0);
+    setEmailPage(data.page || 1);
+    setEmailTotalCount(data.total_count || 0);
+    setEmailPendingCount(data.pending_count || 0);
+    if ((data.data || []).length && !selectedEmail) {
+      setSelectedEmail(data.data[0]);
     }
   };
 
@@ -251,7 +319,7 @@ export default function App() {
     setIsSyncing(true);
     try {
       await fetch(`${apiBase}/emails/sync`, { method: "POST" });
-      await loadEmails();
+      await loadEmails(1);
     } finally {
       setIsSyncing(false);
     }
@@ -450,7 +518,7 @@ export default function App() {
           <section className="panel inbox">
             <div className="panel-head">
               <h2>待处理邮件</h2>
-              <span>{emails.length} 封</span>
+              <span>{emailTotal} 封</span>
             </div>
             <div className="mail-list">
               {emails.map((email) => {
@@ -478,12 +546,16 @@ export default function App() {
                         )}
                       </div>
                       <p>{email.sender}</p>
+                      <div className="mail-time">
+                        <span className="time-relative">{formatRelativeTime(email.received_at)}</span>
+                        <span className="time-full">{formatFullTime(email.received_at)}</span>
+                      </div>
                     </div>
                     <div className="mail-meta">
                       <span className="tag">{cat?.name || "未分类"}</span>
-                      <Button 
-                        className="delete-btn" 
-                        onClick={(e) => deleteEmail(email.id, e)} 
+                      <Button
+                        className="delete-btn"
+                        onClick={(e) => deleteEmail(email.id, e)}
                         title="删除"
                         loading={status === "deleting"}
                       >
@@ -499,6 +571,43 @@ export default function App() {
               {!emails.length && !isLoading && <div className="empty">暂无待处理邮件</div>}
               {isLoading && <div className="empty">加载中...</div>}
             </div>
+
+            {/* 分页控件 */}
+            {emailTotalPages > 1 && (
+              <div className="pagination">
+                <Button
+                  className="ghost small"
+                  onClick={() => loadEmails(1)}
+                  disabled={emailPage === 1}
+                >
+                  首页
+                </Button>
+                <Button
+                  className="ghost small"
+                  onClick={() => loadEmails(emailPage - 1)}
+                  disabled={emailPage === 1}
+                >
+                  上一页
+                </Button>
+                <span className="page-info">
+                  第 {emailPage} / {emailTotalPages} 页 ({emailTotal} 封)
+                </span>
+                <Button
+                  className="ghost small"
+                  onClick={() => loadEmails(emailPage + 1)}
+                  disabled={emailPage >= emailTotalPages}
+                >
+                  下一页
+                </Button>
+                <Button
+                  className="ghost small"
+                  onClick={() => loadEmails(emailTotalPages)}
+                  disabled={emailPage >= emailTotalPages}
+                >
+                  末页
+                </Button>
+              </div>
+            )}
           </section>
         )}
 
@@ -508,6 +617,30 @@ export default function App() {
               <h2>邮件处理</h2>
               <span>三步完成：查看 · 选择 · 发送</span>
             </div>
+
+            {/* 进度条 - 已处理比例 */}
+            {emailTotalCount > 0 && (
+              <div className="progress-section">
+                <div className="progress-header">
+                  <span className="progress-label">📬 处理进度</span>
+                  <span className="progress-count">{emailPendingCount} / {emailTotalCount} 待处理</span>
+                </div>
+                <div className="progress-bar-container">
+                  <div
+                    className="progress-bar-fill"
+                    style={{ width: `${emailTotalCount > 0 ? ((emailTotalCount - emailPendingCount) / emailTotalCount) * 100 : 0}%` }}
+                  >
+                    <span className="progress-sparkle">✨</span>
+                  </div>
+                </div>
+                <p className="progress-hint">
+                  {emailPendingCount === 0 ? "🎉 全部处理完成！" :
+                   emailPendingCount > 30 ? "任务繁重，加油处理！" :
+                   emailPendingCount > 10 ? "稳步推进中..." : "快要完成啦！"}
+                </p>
+              </div>
+            )}
+
             {processingSuccess ? (
               <div className="success-view">
                 <div className="success-icon">✓</div>

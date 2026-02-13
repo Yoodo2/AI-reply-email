@@ -30,12 +30,47 @@ class TranslateRequest(BaseModel):
 
 
 @router.get("")
-def list_emails(status: Optional[str] = None):
+def list_emails(
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10
+):
+    """
+    获取邮件列表，支持分页
+    - page: 页码，从1开始
+    - page_size: 每页数量，默认20
+    """
+    offset = (page - 1) * page_size
+
+    # 获取总数和待处理数
+    total_all = db.fetch_one("SELECT COUNT(*) as count FROM emails")
+    pending_count = db.fetch_one("SELECT COUNT(*) as count FROM emails WHERE status = 'pending'")
+
     if status:
-        rows = db.fetch_all("SELECT * FROM emails WHERE status = ? ORDER BY received_at DESC", (status,))
+        rows = db.fetch_all(
+            "SELECT * FROM emails WHERE status = ? ORDER BY received_at DESC LIMIT ? OFFSET ?",
+            (status, page_size, offset)
+        )
+        total = db.fetch_one(
+            "SELECT COUNT(*) as count FROM emails WHERE status = ?",
+            (status,)
+        )
     else:
-        rows = db.fetch_all("SELECT * FROM emails ORDER BY received_at DESC")
-    return [dict(row) for row in rows]
+        rows = db.fetch_all(
+            "SELECT * FROM emails ORDER BY received_at DESC LIMIT ? OFFSET ?",
+            (page_size, offset)
+        )
+        total = db.fetch_one("SELECT COUNT(*) as count FROM emails")
+
+    return {
+        "data": [dict(row) for row in rows],
+        "total": total["count"] if total else 0,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (total["count"] // page_size) + (1 if total["count"] % page_size > 0 else 0) if total else 0,
+        "pending_count": pending_count["count"] if pending_count else 0,
+        "total_count": total_all["count"] if total_all else 0,
+    }
 
 
 @router.get("/{email_id}")
