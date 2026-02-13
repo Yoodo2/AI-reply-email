@@ -850,7 +850,7 @@ export default function App() {
               <h2>分类管理</h2>
               <span>配置邮件分类及关键词，用于AI分类识别</span>
             </div>
-            <div className="form-section categories-section">
+            <div className="form-section">
               <h3>邮件分类管理</h3>
               <p className="section-desc">配置邮件分类及关键词，用于AI分类识别。</p>
               <div className="categories-list">
