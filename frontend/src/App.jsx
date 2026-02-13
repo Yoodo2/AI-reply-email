@@ -68,6 +68,7 @@ export default function App() {
   const [replyTranslation, setReplyTranslation] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isReverseTranslating, setIsReverseTranslating] = useState(false);  // 反向翻译中
   const [categories, setCategories] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [settings, setSettings] = useState(emptySettings);
@@ -228,7 +229,7 @@ export default function App() {
       const response = await fetch(`${apiBase}/emails/translate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: reply, target_lang: "zh" })
+        body: JSON.stringify({ text: reply, target_lang: "zh", source_lang: "en" })
       });
       const data = await response.json();
       setReplyTranslation(data.translation || "");
@@ -236,6 +237,26 @@ export default function App() {
       console.error("Translation failed:", e);
     } finally {
       setIsTranslating(false);
+    }
+  };
+
+  // 反向翻译：将中文翻译回英文
+  const reverseTranslateReply = async () => {
+    if (!replyTranslation.trim()) return;
+    setIsReverseTranslating(true);
+    try {
+      const response = await fetch(`${apiBase}/emails/translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: replyTranslation, target_lang: "en", source_lang: "zh" })
+      });
+      const data = await response.json();
+      // 用翻译后的英文更新回复内容
+      setReply(data.translation || "");
+    } catch (e) {
+      console.error("Reverse translation failed:", e);
+    } finally {
+      setIsReverseTranslating(false);
     }
   };
 
@@ -405,6 +426,8 @@ export default function App() {
   };
 
   // --- 模板管理 ---
+  const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
+
   const saveTemplate = async (e) => {
     e.preventDefault();
     const isNew = !editingTemplate?.id;
@@ -440,6 +463,25 @@ export default function App() {
   const editTemplate = (t) => {
     setEditingTemplate(t);
     setTemplateForm({ category_id: t.category_id, name: t.name, content: t.content, variables: t.variables || "" });
+    setShowTemplateDrawer(true);
+  };
+
+  const openNewTemplateDrawer = () => {
+    setEditingTemplate(null);
+    setTemplateForm({ category_id: null, name: "", content: "", variables: "" });
+    setShowTemplateDrawer(true);
+  };
+
+  const closeTemplateDrawer = () => {
+    setShowTemplateDrawer(false);
+    setEditingTemplate(null);
+    setTemplateForm({ category_id: null, name: "", content: "", variables: "" });
+  };
+
+  const handleDrawerSave = async (e) => {
+    e.preventDefault();
+    await saveTemplate(e);
+    setShowTemplateDrawer(false);
   };
 
   const applyTemplate = (t) => {
@@ -750,12 +792,26 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* 回复翻译预览 */}
+                  {/* 回复翻译预览 - 可编辑 */}
                   {replyTranslation && (
                     <div className="reply-translation-preview">
                       <h4>回复译文（中文预览）</h4>
-                      <div className="translation-content">
-                        <p>{replyTranslation}</p>
+                      <textarea
+                        className="translation-textarea"
+                        value={replyTranslation}
+                        onChange={(e) => setReplyTranslation(e.target.value)}
+                        placeholder="可在此编辑中文，修改后点击「翻译回英文」更新回复内容"
+                      />
+                      <div className="translation-actions">
+                        <Button
+                          className="accent"
+                          onClick={reverseTranslateReply}
+                          disabled={isReverseTranslating || !replyTranslation.trim()}
+                          loading={isReverseTranslating}
+                        >
+                          {isReverseTranslating ? "翻译中..." : "翻译回英文 ↩"}
+                        </Button>
+                        <span className="translation-hint">修改中文后点击按钮更新英文回复</span>
                       </div>
                     </div>
                   )}
@@ -862,7 +918,16 @@ export default function App() {
           <section className="panel settings">
             <div className="panel-head">
               <h2>模板库</h2>
-              <span>管理回复模板，为分类配置标准回复</span>
+              <div className="panel-head-actions">
+                <span>管理回复模板，为分类配置标准回复</span>
+                <Button className="new-template-btn" onClick={openNewTemplateDrawer}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  新建模板
+                </Button>
+              </div>
             </div>
 
             <div className="template-full-list">
@@ -878,8 +943,8 @@ export default function App() {
                     </div>
                     <div className="template-full-actions">
                       <Button className="small" onClick={() => editTemplate(t)}>编辑</Button>
-                      <Button 
-                        className="small danger" 
+                      <Button
+                        className="small danger"
                         onClick={() => deleteTemplate(t.id)}
                         loading={templateOperation.type === 'delete' && templateOperation.id === t.id}
                       >
@@ -889,33 +954,76 @@ export default function App() {
                   </div>
                 );
               })}
-              {!templates.length && <div className="empty">暂无模板，请添加</div>}
+              {!templates.length && <div className="empty">暂无模板，点击「新建模板」按钮添加</div>}
             </div>
-
-            <form className="template-form-full" onSubmit={saveTemplate}>
-              <h4>{editingTemplate?.id ? "编辑模板" : "新增模板"}</h4>
-              <div className="form-grid form-grid-wide">
-                <select value={templateForm.category_id || ""} onChange={(e) => setTemplateForm({ ...templateForm, category_id: Number(e.target.value) })} required>
-                  <option value="">选择关联分类</option>
-                  {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                </select>
-                <input placeholder="模板名称" value={templateForm.name} onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })} required />
-                <input placeholder="变量（逗号分隔）" value={templateForm.variables} onChange={(e) => setTemplateForm({ ...templateForm, variables: e.target.value })} />
-              </div>
-              <textarea className="template-textarea-full" placeholder="模板内容（支持变量替换，如 {客户姓名}、{订单号}）" value={templateForm.content} onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })} required />
-              <div className="form-actions">
-                {editingTemplate && <Button type="button" className="ghost" onClick={() => { setEditingTemplate(null); setTemplateForm({ category_id: null, name: "", content: "", variables: "" }); }}>取消</Button>}
-                <Button 
-                  className="primary" 
-                  type="submit"
-                  loading={templateOperation.type === 'save' && (editingTemplate?.id ? templateOperation.id === editingTemplate.id : templateOperation.id === 'new')}
-                >
-                  {editingTemplate?.id ? "更新" : "新增"}模板
-                </Button>
-              </div>
-            </form>
           </section>
         )}
+
+        {/* Template Drawer - 侧边抽屉 - 优化性能版本 */}
+        <div className={`drawer-overlay ${showTemplateDrawer ? 'active' : ''}`} onClick={closeTemplateDrawer}></div>
+        <div className={`drawer drawer-template ${showTemplateDrawer ? 'active' : ''}`}>
+          <div className="drawer-header">
+                <h3>{editingTemplate?.id ? "编辑模板" : "新建模板"}</h3>
+                <button className="drawer-close" onClick={closeTemplateDrawer}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <form className="drawer-form" onSubmit={handleDrawerSave}>
+                <div className="form-group">
+                  <label>关联分类 *</label>
+                  <select
+                    value={templateForm.category_id || ""}
+                    onChange={(e) => setTemplateForm({ ...templateForm, category_id: Number(e.target.value) })}
+                    required
+                  >
+                    <option value="">选择关联分类</option>
+                    {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>模板名称 *</label>
+                  <input
+                    type="text"
+                    placeholder="如：退款确认回复"
+                    value={templateForm.name}
+                    onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>变量说明</label>
+                  <input
+                    type="text"
+                    placeholder="如：客户姓名,订单号（逗号分隔）"
+                    value={templateForm.variables}
+                    onChange={(e) => setTemplateForm({ ...templateForm, variables: e.target.value })}
+                  />
+                  <span className="form-hint">变量可在模板中使用 {"{变量名}"} 格式</span>
+                </div>
+                <div className="form-group">
+                  <label>模板内容 *</label>
+                  <textarea
+                    className="drawer-textarea"
+                    placeholder="模板内容（支持变量替换，如 {客户姓名}、{订单号}）"
+                    value={templateForm.content}
+                    onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="drawer-actions">
+                  <Button type="button" className="ghost" onClick={closeTemplateDrawer}>取消</Button>
+                  <Button
+                    className="primary"
+                    type="submit"
+                    loading={templateOperation.type === 'save' && (editingTemplate?.id ? templateOperation.id === editingTemplate.id : templateOperation.id === 'new')}
+                  >
+                    {editingTemplate?.id ? "更新模板" : "保存模板"}
+                  </Button>
+                </div>
+              </form>
+            </div>
       </main>
     </div>
   );

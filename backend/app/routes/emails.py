@@ -27,6 +27,7 @@ class AnalyzeRequest(BaseModel):
 class TranslateRequest(BaseModel):
     text: str
     target_lang: str = "zh"
+    source_lang: str = "auto"  # 源语言，默认自动检测
 
 
 @router.get("")
@@ -270,18 +271,25 @@ def send_email(email_id: int, payload: EmailSendRequest):
 
 @router.post("/translate")
 def translate_text(payload: TranslateRequest):
-    """翻译文本（用于回复内容翻译预览）"""
+    """翻译文本（用于回复内容翻译预览），支持双向翻译"""
     baidu_appid = db.get_setting("baidu_appid", "")
     baidu_secret = db.get_setting("baidu_secret", "")
-    
+
     if not baidu_appid or not baidu_secret:
         raise HTTPException(status_code=400, detail="Baidu translation not configured")
-    
-    translation = translate_baidu(payload.text, baidu_appid, baidu_secret, payload.target_lang)
-    
+
+    # 调用翻译函数，传入源语言
+    translation = translate_baidu(
+        payload.text,
+        baidu_appid,
+        baidu_secret,
+        payload.target_lang,
+        payload.source_lang
+    )
+
     if translation is None:
         raise HTTPException(status_code=500, detail="Translation failed")
-    
+
     return {"translation": translation}
 
 

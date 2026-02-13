@@ -6,7 +6,17 @@ from typing import Optional
 import requests
 
 
-def translate_baidu(text: str, appid: str, secret: str, target_lang: str = "zh") -> Optional[str]:
+def translate_baidu(text: str, appid: str, secret: str, target_lang: str = "zh", source_lang: str = "auto") -> Optional[str]:
+    """
+    百度翻译 API
+
+    Args:
+        text: 要翻译的文本
+        appid: 百度翻译 AppID
+        secret: 百度翻译 Secret
+        target_lang: 目标语言，默认中文
+        source_lang: 源语言，默认自动检测
+    """
     if not text.strip():
         return ""
     salt = str(int(time.time() * 1000) + random.randint(0, 1000))
@@ -14,7 +24,7 @@ def translate_baidu(text: str, appid: str, secret: str, target_lang: str = "zh")
     sign = hashlib.md5(sign_str.encode("utf-8")).hexdigest()
     params = {
         "q": text,
-        "from": "auto",
+        "from": source_lang,  # 支持指定源语言
         "to": target_lang,
         "appid": appid,
         "salt": salt,

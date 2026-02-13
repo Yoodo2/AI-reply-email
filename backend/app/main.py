@@ -50,7 +50,7 @@ async def startup_event() -> None:
     interval = int(db.get_setting("fetch_interval", "300"))
     await poller.start(interval)
     logger.info(f"Email poller started with interval {interval}s")
-    asyncio.get_event_loop().call_later(1.0, lambda: webbrowser.open("http://127.0.0.1:8000"))
+    asyncio.get_event_loop().call_later(1.0, lambda: webbrowser.open("http://127.0.0.1:8001"))
 
 
 @app.on_event("shutdown")
